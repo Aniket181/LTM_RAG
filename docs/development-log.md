@@ -72,4 +72,61 @@ A chronological record of all development phases, decisions, and changes.
 
 ---
 
-*Next: Phase 2 — Database & Core Models*
+## Phase 12 — Frontend Dashboard (Accelerated)
+**Date:** 2026-09-07
+**Status:** ✅ Complete
+**Commit:** `22a3e99` — `feat: add student opportunity dashboard (frontend)`
+
+> Note: Built ahead of schedule (before Phases 2–11) to establish the full UI layer.
+> All backend-dependent features use mock data structured identically to real API schemas.
+> Connecting real APIs requires only swapping mock data imports for API client calls.
+
+### Tech Stack
+- Next.js 16.3.4 (App Router) + TypeScript
+- Tailwind CSS + custom CSS design system
+- lucide-react (icons), framer-motion, axios
+
+### Pages Built (7 total)
+
+| Route | Page | Status |
+|-------|------|--------|
+| `/` | Dashboard | ✅ Live health API + mock recommendations |
+| `/profile` | Student Profile | ✅ Full form with completeness meter |
+| `/opportunities` | Search | ✅ Real-time filter by type/level/status/text |
+| `/opportunities/[id]` | Detail | ✅ Eligibility rules + score breakdown + docs |
+| `/recommendations` | Recommendations | ✅ Expandable cards with rule breakdown |
+| `/chat` | AI Assistant | ✅ Mock RAG with source citations |
+| `/sources` | Source Documents | ✅ Document status + chunk counts |
+
+### Key Architecture Files
+| File | Purpose |
+|------|---------|
+| `src/lib/types.ts` | TypeScript types matching backend Pydantic schemas exactly |
+| `src/lib/api.ts` | Typed axios client for all API endpoints |
+| `src/lib/mock-data.ts` | 8 real scholarship records + 5 source documents |
+| `src/app/globals.css` | Premium dark design system (glassmorphism, gradients, animations) |
+| `src/components/layout/Sidebar.tsx` | Persistent navigation with active route detection |
+
+### Design System
+- Dark glassmorphism theme (deep navy + electric indigo)
+- CSS custom properties for consistent theming
+- Reusable component classes: `.card`, `.badge-*`, `.btn-*`, `.glass`, `.rule-row`
+- Animations: fadeInUp, float, pulse-glow, shimmer skeleton loader, typing indicator
+
+### Build Verification
+```
+✓ Compiled successfully (6.7s)
+✓ TypeScript: 0 errors
+✓ 9/9 pages generated (8 routes + not-found)
+✓ HTTP 200 from localhost:3000 (36KB response)
+```
+
+### Mock Data Strategy
+All scholarship data is sourced from real official schemes (CSSS, AICTE Pragati, AICTE Saksham,
+PMSS, UGC Indira Gandhi, Post-Matric SC, INSPIRE, NSP Pre-Matric Minority).
+Every record includes `last_verified_date`, `source_url`, and `academic_year`.
+The UI shows a disclaimer on every page advising users to verify from official sources.
+
+---
+
+*Next: Phase 2 — Database & Core Models (PostgreSQL + SQLAlchemy + Alembic)*
