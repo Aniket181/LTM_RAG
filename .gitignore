@@ -135,3 +135,6 @@ docker-compose.override.yml
 *.key
 secrets/
 credentials/
+
+# Uploaded/runtime document data
+backend/data/

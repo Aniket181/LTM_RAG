@@ -173,4 +173,21 @@ The UI shows a disclaimer on every page advising users to verify from official s
 
 ---
 
-*Next: Phase 4 — Document Ingestion (PDF loader, text cleaner, section detector, chunker)*
+## Phase 4 — Document Ingestion Pipeline
+**Date:** 2026-09-29
+**Status:** ✅ Complete
+**Commit:** `feat: implement document ingestion pipeline`
+
+### Architecture & Deliverables
+- **Ingestion Core**:
+  - `loader.py`: Uses `PyPDFLoader` to extract raw text and metadata from PDF files.
+  - `cleaner.py`: Normalizes text and fixes formatting issues.
+  - `chunker.py`: Uses LangChain's `RecursiveCharacterTextSplitter` to create token-optimized chunks with overlaps.
+- **API Endpoints**: Built `backend/app/api/v1/documents.py` (POST `/upload`, GET `/`, GET `/{id}`, GET `/{id}/chunks`) with FastAPI BackgroundTasks for asynchronous processing.
+- **Router Integration**: Registered `documents` router in `api/v1/router.py`.
+- **Testing**: Added `TestClient` integration tests generating dummy PDFs dynamically using `reportlab`.
+- **Configuration**: Updated `requirements.txt` to include `langchain-community`, `langchain-text-splitters`, and `pypdf`.
+
+---
+
+*Next: Phase 5 — Semantic Search & Embeddings (Local HuggingFace Embeddings, pgvector)*

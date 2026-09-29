@@ -41,6 +41,11 @@ class SourceDocument(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         back_populates="source_document",
     )
 
+    @property
+    def chunk_count(self) -> int:
+        """Dynamically compute chunk count for Pydantic serialization."""
+        return len(self.chunks) if self.chunks is not None else 0
+
     def to_dict(self) -> Dict[str, Any]:
         """Serialize source document into a dictionary."""
         return {
