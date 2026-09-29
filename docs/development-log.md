@@ -229,6 +229,31 @@ The UI shows a disclaimer on every page advising users to verify from official s
 - **Data Seeding**: Created `scripts/seed_students.py` to inject diverse, realistic mock student profiles into the database for testing the eligibility engine.
 - **Testing**: Added isolated FastAPI `TestClient` integration tests in `backend/tests/integration/test_student_api.py`.
 
+## Phase 8 — Eligibility Engine
+**Date:** 2026-09-29
+**Status:** ✅ Complete
+**Commit:** `feat: implement deterministic eligibility engine`
+
+### Architecture & Deliverables
+- **Rules Engine**: Created `backend/app/eligibility/rules/__init__.py` with deterministic evaluation rules (`AcademicRule`, `FinancialRule`, `DemographicRule`).
+- **Engine Orchestrator**: Built `backend/app/eligibility/engine.py` to evaluate students against opportunities and aggregate `PASS`, `FAIL`, `UNKNOWN` statuses into `ELIGIBLE`, `NOT_ELIGIBLE`, and `INSUFFICIENT_INFORMATION`.
+- **API Endpoint**: Added `POST /api/v1/eligibility/evaluate` to trigger evaluations and return transparent rule breakdowns.
+- **Auditing**: Added persistence of evaluations to PostgreSQL via the `EligibilityCheckLog` model.
+- **Testing**: Added isolated integration tests ensuring rules trigger correctly and edge cases (missing data) are handled safely.
+
 ---
 
-*Next: Phase 8 — Eligibility Engine (Deterministic Rules)*
+## Phase 9 — Opportunity Ranking & Recommendation Engine
+**Date:** 2026-09-29
+**Status:** ✅ Complete
+**Commit:** `feat: implement recommendation engine and multi-factor scoring`
+
+### Architecture & Deliverables
+- **Scoring Components**: Built `backend/app/recommendations/scorer.py` featuring isolated, transparent scoring classes (`DeadlineScorer`, `FinancialNeedScorer`, `AcademicMeritScorer`, `DemographicMatchScorer`).
+- **Engine**: Built `RecommendationEngine` in `backend/app/recommendations/engine.py` which uses the `EligibilityEngine` as a strict gatekeeper, excluding `NOT_ELIGIBLE` scholarships and then scoring and ranking the remaining ones based on a deterministic total score tiebreaker logic.
+- **API Endpoints**: Added `GET /api/v1/recommendations/{student_id}` with optional `top_k` limiting.
+- **Testing**: Comprehensive tests verifying that database isolation is maintained, NOT_ELIGIBLE items are skipped, nearer deadlines rank higher, and the API returns a transparent breakdown of points.
+
+---
+
+*Next: Phase 10 — RAG-based Grounded Q&A*

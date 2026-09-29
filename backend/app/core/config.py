@@ -86,7 +86,10 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # LLM Provider
     # ------------------------------------------------------------------
-    llm_provider: Literal["mock", "openai", "google", "anthropic"] = "mock"
+    llm_provider: Literal["mock", "openai", "google", "anthropic", "ollama"] = "mock"
+
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3"
 
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"

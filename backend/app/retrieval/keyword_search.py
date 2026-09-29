@@ -6,9 +6,10 @@ Uses an in-memory index that can be refreshed.
 
 from typing import List, Dict, Any, Optional
 import threading
+import uuid
 from rank_bm25 import BM25Okapi
 from sqlalchemy.orm import Session
-from app.models.document import DocumentChunk
+from app.models.document import DocumentChunk, SourceDocument
 
 class KeywordSearcher:
     """
@@ -54,7 +55,7 @@ class KeywordSearcher:
             return []
         return text.lower().split()
 
-    def search(self, query: str, k: int = 5, db: Optional[Session] = None) -> List[Dict[str, Any]]:
+    def search(self, query: str, k: int = 5, db: Optional[Session] = None, opportunity_id: Optional[uuid.UUID] = None) -> List[Dict[str, Any]]:
         """
         Finds the top-k most similar document chunks using BM25.
         If the index is not initialized, it will try to initialize it using the provided db session.
@@ -79,6 +80,21 @@ class KeywordSearcher:
         
         # Zip scores with chunks, sort by score descending
         chunk_scores = list(zip(self._chunks, scores))
+        
+        if opportunity_id:
+            if not db:
+                return []
+            from app.models.opportunity import Opportunity
+            opp = db.query(Opportunity.source_document_id).filter(Opportunity.id == opportunity_id).first()
+            if opp and opp[0]:
+                doc_id = opp[0]
+                chunk_scores = [
+                    cs for cs in chunk_scores 
+                    if cs[0].source_document_id == doc_id
+                ]
+            else:
+                return []
+            
         chunk_scores.sort(key=lambda x: x[1], reverse=True)
         
         # Take top k
@@ -101,6 +117,7 @@ class KeywordSearcher:
                 "score": float(score),
                 "source_url": source_doc.source_url if source_doc else None,
                 "academic_year": source_doc.academic_year if source_doc else None,
+                "opportunity_id": str(source_doc.opportunities[0].id) if source_doc and getattr(source_doc, "opportunities", None) else None,
             })
 
         return formatted_results

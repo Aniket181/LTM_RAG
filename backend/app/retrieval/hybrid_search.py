@@ -4,7 +4,8 @@ Fuses the results of pgvector semantic search and BM25 keyword search
 using Reciprocal Rank Fusion (RRF).
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+import uuid
 from sqlalchemy.orm import Session
 
 from app.retrieval.search import SemanticSearcher
@@ -18,7 +19,7 @@ class HybridSearcher:
         self.semantic_searcher = SemanticSearcher(db)
         self.keyword_searcher = KeywordSearcher()
         
-    def search(self, query: str, k: int = 5, rrf_k: int = 60) -> List[Dict[str, Any]]:
+    def search(self, query: str, k: int = 5, rrf_k: int = 60, opportunity_id: Optional[uuid.UUID] = None) -> List[Dict[str, Any]]:
         """
         Executes hybrid search.
         
@@ -26,6 +27,7 @@ class HybridSearcher:
             query: The search query string.
             k: The final number of results to return.
             rrf_k: The 'k' constant used in the Reciprocal Rank Fusion formula. Default 60.
+            opportunity_id: Optional UUID to restrict results to a specific opportunity.
         """
         if not query:
             return []
@@ -33,8 +35,8 @@ class HybridSearcher:
         # 1. Fetch top results from both engines (fetch a larger pool for better fusion)
         pool_size = max(k * 2, 20)
         
-        semantic_results = self.semantic_searcher.search(query, k=pool_size)
-        keyword_results = self.keyword_searcher.search(query, k=pool_size, db=self.db)
+        semantic_results = self.semantic_searcher.search(query, k=pool_size, opportunity_id=opportunity_id)
+        keyword_results = self.keyword_searcher.search(query, k=pool_size, db=self.db, opportunity_id=opportunity_id)
         
         # 2. Reciprocal Rank Fusion (RRF)
         # Formula: RRF_score(d) = 1 / (rrf_k + rank_semantic(d)) + 1 / (rrf_k + rank_keyword(d))

@@ -1,1 +1,4 @@
-﻿"""Package init."""
+"""
+RAG Engine
+Retrieval-Augmented Generation implementation.
+"""
