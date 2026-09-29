@@ -10,6 +10,7 @@ import uuid
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
+from pgvector.sqlalchemy import Vector
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, utc_now
 
@@ -81,7 +82,10 @@ class DocumentChunk(Base, UUIDPrimaryKeyMixin):
     section_title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     page_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     chunk_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
-    embedding_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    
+    # Semantic Search Embedding
+    embedding: Mapped[Optional[Any]] = mapped_column(Vector(384), nullable=True)
+    
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
@@ -105,6 +109,5 @@ class DocumentChunk(Base, UUIDPrimaryKeyMixin):
             "section_title": self.section_title,
             "page_number": self.page_number,
             "chunk_metadata": self.chunk_metadata or {},
-            "embedding_id": self.embedding_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

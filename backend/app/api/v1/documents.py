@@ -19,6 +19,7 @@ from app.schemas.document import SourceDocumentResponse, DocumentChunkResponse
 from app.ingestion.loader import DocumentLoader
 from app.ingestion.cleaner import TextCleaner
 from app.ingestion.chunker import DocumentChunker
+from app.retrieval.embedder import LocalEmbedder
 
 router = APIRouter()
 
@@ -65,9 +66,16 @@ def process_document_pipeline(document_id: uuid.UUID, file_path: str, db: Sessio
             db.commit()
             return
             
+        # 3.5 Generate Embeddings
+        logger.info(f"Generating embeddings for {num_chunks} chunks using local BGE model...")
+        embedder = LocalEmbedder()
+        texts_to_embed = [chunk.page_content for chunk in chunks]
+        embeddings = embedder.embed_documents(texts_to_embed)
+        logger.info(f"Successfully generated {len(embeddings)} embeddings of dimension {len(embeddings[0]) if embeddings else 0}.")
+            
         # 4. Save Chunks to Database
         inserted = 0
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks):
             page_num = chunk.metadata.get("page", 0) + 1  # 1-indexed for display
             chunk_idx = chunk.metadata.get("chunk_index", 0)
             
@@ -76,7 +84,8 @@ def process_document_pipeline(document_id: uuid.UUID, file_path: str, db: Sessio
                 content=chunk.page_content,
                 chunk_index=chunk_idx,
                 page_number=page_num,
-                chunk_metadata=chunk.metadata
+                chunk_metadata=chunk.metadata,
+                embedding=embeddings[i]
             )
             db.add(new_chunk)
             inserted += 1

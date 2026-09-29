@@ -98,7 +98,7 @@ def test_source_document_and_chunks_relationship(db_session):
         section_title="Eligibility Criteria",
         page_number=1,
         chunk_metadata={"section": "eligibility", "scheme": "Pragati"},
-        embedding_id="emb_001",
+        embedding=[0.0] * 384,
     )
     chunk2 = DocumentChunk(
         source_document_id=doc.id,
@@ -107,7 +107,7 @@ def test_source_document_and_chunks_relationship(db_session):
         section_title="Financial Assistance",
         page_number=2,
         chunk_metadata={"section": "benefits", "scheme": "Pragati"},
-        embedding_id="emb_002",
+        embedding=[0.0] * 384,
     )
     db_session.add_all([chunk1, chunk2])
     db_session.commit()

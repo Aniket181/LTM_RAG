@@ -47,7 +47,6 @@ class DocumentChunkBase(BaseModel):
     section_title: Optional[str] = None
     page_number: Optional[int] = None
     chunk_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    embedding_id: Optional[str] = None
 
 
 class DocumentChunkResponse(DocumentChunkBase):
