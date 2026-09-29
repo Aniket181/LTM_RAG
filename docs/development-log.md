@@ -160,4 +160,17 @@ The UI shows a disclaimer on every page advising users to verify from official s
 
 ---
 
-*Next: Phase 3 — Opportunity Data & Seeding (Populate 8+ real scholarship records & Opportunity CRUD API)*
+## Phase 3 — Opportunity Data & Seeding
+**Date:** 2026-09-29
+**Status:** ✅ Complete
+**Commit:** `feat: implement opportunity API and data seeder`
+
+### Architecture & Deliverables
+- **API Endpoints**: Built full CRUD in `backend/app/api/v1/opportunities.py` (GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`).
+- **Router Integration**: Registered `opportunities` router in `api/v1/router.py`.
+- **Data Seeding**: Created `scripts/seed_opportunities.py` with 8 real-world scholarships (e.g., CSSS, AICTE Pragati, PMSS) mapped to the `Opportunity` ORM model.
+- **Testing**: Added FastAPI `TestClient` integration tests in `backend/tests/integration/test_opportunity_api.py` for all CRUD operations using an in-memory SQLite database.
+
+---
+
+*Next: Phase 4 — Document Ingestion (PDF loader, text cleaner, section detector, chunker)*
