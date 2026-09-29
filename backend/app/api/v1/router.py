@@ -14,9 +14,9 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(health.router)
 
 # --- Future routers (added in later phases) ---
-from app.api.v1 import opportunities, documents, search
+from app.api.v1 import opportunities, documents, search, students
 
-# api_router.include_router(students.router, prefix="/students", tags=["Students"])
+api_router.include_router(students.router, prefix="/students", tags=["Students"])
 api_router.include_router(opportunities.router, prefix="/opportunities", tags=["Opportunities"])
 api_router.include_router(documents.router, prefix="/documents", tags=["Documents"])
 api_router.include_router(search.router, prefix="/search", tags=["Search"])
