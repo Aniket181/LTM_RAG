@@ -190,4 +190,32 @@ The UI shows a disclaimer on every page advising users to verify from official s
 
 ---
 
-*Next: Phase 5 — Semantic Search & Embeddings (Local HuggingFace Embeddings, pgvector)*
+## Phase 5 — Semantic Search & Embeddings
+**Date:** 2026-09-29
+**Status:** ✅ Complete
+**Commit:** `feat: implement semantic embeddings using pgvector`
+
+### Architecture & Deliverables
+- **Database**: Updated `DocumentChunk` schema to store 384-dimensional `pgvector` embeddings (`embedding = Vector(384)`).
+- **Embedding Engine**: Implemented `LocalEmbedder` in `backend/app/retrieval/embedder.py` using `langchain-huggingface` and the `BAAI/bge-small-en-v1.5` model loaded locally (fully offline).
+- **Search Engine**: Built `SemanticSearcher` using the pgvector cosine distance operator `<=>` to rank document chunks.
+- **Pipeline Integration**: Modified the background ingestion pipeline in `documents.py` to seamlessly embed new chunks directly into PostgreSQL.
+- **API Endpoints**: Added `GET /api/v1/search/semantic`.
+
+---
+
+## Phase 6 — Keyword Search & Hybrid Retrieval
+**Date:** 2026-09-29
+**Status:** ✅ Complete
+**Commit:** `feat: implement bm25 and hybrid rrf retrieval`
+
+### Architecture & Deliverables
+- **Keyword Engine**: Implemented `KeywordSearcher` in `backend/app/retrieval/keyword_search.py` using `rank_bm25`. Uses a singleton pattern to cache the tokenized corpus in-memory for speed.
+- **Hybrid Fusion Engine**: Implemented `HybridSearcher` in `backend/app/retrieval/hybrid_search.py` combining Semantic and Keyword engine results using the Reciprocal Rank Fusion (RRF) algorithm.
+- **Pipeline Integration**: Added a post-processing hook in the document ingestion pipeline to trigger an automatic `KeywordSearcher().refresh()` to keep the BM25 index up-to-date.
+- **API Endpoints**: Added `GET /api/v1/search/keyword` and `GET /api/v1/search/hybrid`.
+- **Testing**: Complete integration testing in `backend/tests/integration/test_hybrid_search.py` verifying RRF math and API outputs.
+
+---
+
+*Next: Phase 7 — Student Profile Management*

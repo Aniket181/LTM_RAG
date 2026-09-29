@@ -61,7 +61,7 @@ pypdf==6.16.2
 # ------------------------------------------
 # Keyword Search
 # ------------------------------------------
-# rank_bm25  # Added in Phase 6
+rank_bm25==0.2.2  # Added in Phase 6
 
 # ------------------------------------------
 # HTTP Client (testing + future integrations)

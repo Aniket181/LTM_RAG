@@ -96,6 +96,14 @@ def process_document_pipeline(document_id: uuid.UUID, file_path: str, db: Sessio
         doc_record.ingestion_status = "Processed"
         db.commit()
         
+        # 5. Refresh Keyword Search Index
+        try:
+            from app.retrieval.keyword_search import KeywordSearcher
+            KeywordSearcher().refresh(db)
+            logger.info("Refreshed BM25 keyword search index.")
+        except Exception as e:
+            logger.error(f"Failed to refresh keyword search index: {str(e)}", exc_info=True)
+        
     except Exception as e:
         doc_record.ingestion_status = "Failed"
         db.commit()
