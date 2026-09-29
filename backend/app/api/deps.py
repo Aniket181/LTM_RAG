@@ -26,18 +26,9 @@ def pagination_params(
 
 
 # ------------------------------------------------------------------
-# Database Session (placeholder — wired in Phase 2)
+# Database Session
 # ------------------------------------------------------------------
 
-# from app.db.session import SessionLocal
-#
-# def get_db() -> Generator:
-#     """
-#     Provide a database session for the duration of a request.
-#     Automatically closes the session when the request completes.
-#     """
-#     db = SessionLocal()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
+from app.db.session import get_db
+
+__all__ = ["pagination_params", "get_db"]

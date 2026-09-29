@@ -129,4 +129,35 @@ The UI shows a disclaimer on every page advising users to verify from official s
 
 ---
 
-*Next: Phase 2 — Database & Core Models (PostgreSQL + SQLAlchemy + Alembic)*
+## Phase 2 — Database & Core Models
+**Date:** 2026-09-11
+**Status:** ✅ Complete
+**Commit:** `feat: add database and core models (postgresql docker)`
+
+### Architecture & Deliverables
+- **Docker Compose**: Containerized PostgreSQL 16 using `pgvector/pgvector:pg16` with persistent volumes and health check.
+- **Environment**: `.env` configured with default local database settings.
+- **SQLAlchemy 2.0 Base & Session**:
+  - `app.db.base`: `Base`, `UUIDPrimaryKeyMixin`, `TimestampMixin` with UTC support.
+  - `app.db.session`: Engine configuration with connection pooling (`pool_pre_ping=True`) and `get_db` FastAPI dependency.
+  - `app.db.init_db`: Table initialization and connectivity check utilities.
+- **ORM Models**:
+  - `Student` (`app.models.student`): Complete demographic, academic, domicile, and interest attributes.
+  - `Opportunity` (`app.models.opportunity`): Comprehensive opportunity schema with income, CGPA, category, and eligibility criteria.
+  - `SourceDocument` & `DocumentChunk` (`app.models.document`): Ingestion status, source metadata, and chunk passages.
+  - `EligibilityCheckLog` (`app.models.eligibility_check_log`): Auditable evaluation trail with JSON rule results.
+- **Pydantic Validation Schemas**:
+  - `app.schemas.student`: `StudentCreate`, `StudentUpdate`, `StudentResponse`.
+  - `app.schemas.opportunity`: `OpportunityCreate`, `OpportunityUpdate`, `OpportunityResponse`, `OpportunityFilter`.
+  - `app.schemas.document`: `SourceDocumentResponse`, `DocumentChunkResponse`.
+  - `app.schemas.eligibility`: `RuleResultSchema`, `EligibilityResultSchema`, `EligibilityCheckRequest`.
+- **Alembic Migrations**:
+  - `alembic.ini`, `migrations/env.py`, `migrations/script.py.mako`.
+  - `migrations/versions/001_initial_schema.py`: Initial schema creation for all 5 tables and indexes.
+- **Testing & Verification**:
+  - `backend/tests/unit/test_db_models.py`: Unit tests verifying model creation, relations, cascading deletes, and Pydantic validation using in-memory SQLite.
+  - `scripts/test_db_connection.py`: Live smoke test script verifying container connectivity, table presence, and CRUD operations.
+
+---
+
+*Next: Phase 3 — Opportunity Data & Seeding (Populate 8+ real scholarship records & Opportunity CRUD API)*
