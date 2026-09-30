@@ -274,7 +274,7 @@ Ask me anything about the scholarships in our knowledge base!
     if (!query.trim() || loading) return;
 
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'user',
       content: query,
       timestamp: new Date(),
@@ -289,7 +289,7 @@ Ask me anything about the scholarships in our knowledge base!
 
     const { answer, sources } = getResponse(query);
     const aiMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
+      id: crypto.randomUUID(),
       role: 'assistant',
       content: answer,
       sources,

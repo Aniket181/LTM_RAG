@@ -256,4 +256,19 @@ The UI shows a disclaimer on every page advising users to verify from official s
 
 ---
 
-*Next: Phase 10 — RAG-based Grounded Q&A*
+## Phase 10 — RAG-based Grounded Q&A
+**Date:** 2026-09-29
+**Status:** ✅ Complete
+**Commit:** `feat: implement rag engine and q&a`
+
+### Architecture & Deliverables
+- **LLM Factory**: Created `backend/app/core/llm.py` to instantiate the appropriate language model based on `LLM_PROVIDER` (supporting `mock` and `ollama`).
+- **RAG Engine**: Built `backend/app/rag/engine.py` to orchestrate hybrid search retrieval and LLM context formatting. Ensures strict grounding via a strong system prompt.
+- **Source Attribution**: Defined `SourceAttribution` schemas to provide precise provenance (chunk, document, opportunity, page number, and similarity score) for every generated answer.
+- **API Endpoint**: Added `POST /api/v1/rag/ask` allowing queries optionally scoped to a specific `opportunity_id`.
+- **Retrieval Filtering**: Refactored `SemanticSearcher` and `KeywordSearcher` to strictly filter by `opportunity_id` prior to executing full vector/BM25 sorting by mapping via `source_document_id`.
+- **Testing**: Added isolated integration tests using a deterministic `FakeListChatModel` verifying context grounding, boundary enforcement (`top_k`), and opportunity filtering.
+
+---
+
+*Next: Phase 11 — Frontend Setup & Scaffolding*

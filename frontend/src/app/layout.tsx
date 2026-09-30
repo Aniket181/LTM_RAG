@@ -1,33 +1,29 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
-import Sidebar from '@/components/layout/Sidebar';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
-  title: {
-    template: '%s | ScholarAI — RAG Scholarship Intelligence',
-    default: 'ScholarAI — RAG Scholarship Intelligence System',
-  },
-  description:
-    'Intelligent scholarship discovery and eligibility determination powered by RAG, Hybrid Retrieval, and a Deterministic Eligibility Engine.',
-  keywords: ['scholarship', 'eligibility', 'RAG', 'AI', 'education', 'fellowship', 'India'],
+  title: 'ScholarAI — RAG Scholarship Intelligence',
+  description: 'Intelligent scholarship discovery and eligibility determination.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={inter.className} suppressHydrationWarning>
       <body>
-        <Sidebar />
-        <main className="main-content">
+        <Navbar />
+        <main className="min-h-screen pt-20 px-6 max-w-7xl mx-auto">
           {children}
         </main>
+        <Footer />
       </body>
     </html>
   );
