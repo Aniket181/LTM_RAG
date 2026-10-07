@@ -12,6 +12,8 @@ from app.models.student import Student
 from app.models.opportunity import Opportunity
 from app.schemas.eligibility import EligibilityCheckRequest, EligibilityCheckResponse
 from app.eligibility.engine import EligibilityEngine
+from app.core.demo import TEMP_STUDENT_PROFILES
+from datetime import datetime
 
 router = APIRouter()
 
@@ -24,9 +26,17 @@ def evaluate_eligibility(
     Evaluates a student's eligibility against specified opportunities.
     If opportunity_ids is omitted or empty, it evaluates against ALL active opportunities.
     """
-    student = db.query(Student).filter(Student.id == request.student_id).first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
+    id_str = str(request.student_id)
+    if id_str in TEMP_STUDENT_PROFILES:
+        profile_data = TEMP_STUDENT_PROFILES[id_str]
+        student = Student(**profile_data)
+        student.id = request.student_id
+        student.created_at = datetime.utcnow()
+        student.updated_at = datetime.utcnow()
+    else:
+        student = db.query(Student).filter(Student.id == request.student_id).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
         
     if request.opportunity_ids:
         opportunities = db.query(Opportunity).filter(Opportunity.id.in_(request.opportunity_ids)).all()

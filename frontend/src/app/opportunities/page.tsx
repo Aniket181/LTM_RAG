@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Filter, X, ArrowRight, Clock, ExternalLink, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
-import { MOCK_OPPORTUNITIES } from '@/lib/mock-data';
+import { getOpportunities } from '@/lib/api';
 import type { Opportunity, OpportunityType, EducationLevel } from '@/lib/types';
 
 function daysUntil(d: string) { return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000); }
@@ -61,6 +61,23 @@ function OpportunityCard({ opp }: { opp: Opportunity }) {
 }
 
 export default function OpportunitiesPage() {
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchOpp() {
+      try {
+        const opps = await getOpportunities();
+        setOpportunities(opps);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchOpp();
+  }, []);
+
   const [query, setQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('');
   const [filterLevel, setFilterLevel] = useState<string>('');
@@ -68,7 +85,7 @@ export default function OpportunitiesPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = useMemo(() => {
-    return MOCK_OPPORTUNITIES.filter((o) => {
+    return opportunities.filter((o) => {
       const q = query.toLowerCase();
       const matchQ = !q || o.name.toLowerCase().includes(q) || o.provider.toLowerCase().includes(q) || o.description.toLowerCase().includes(q);
       const matchType = !filterType || o.opportunity_type === filterType;
@@ -76,7 +93,7 @@ export default function OpportunitiesPage() {
       const matchStatus = !filterStatus || o.status === filterStatus;
       return matchQ && matchType && matchLevel && matchStatus;
     });
-  }, [query, filterType, filterLevel, filterStatus]);
+  }, [opportunities, query, filterType, filterLevel, filterStatus]);
 
   const clearFilters = () => { setQuery(''); setFilterType(''); setFilterLevel(''); setFilterStatus(''); };
   const hasFilters = query || filterType || filterLevel || filterStatus;
@@ -85,7 +102,7 @@ export default function OpportunitiesPage() {
     <div className="animate-fade-in">
       <div className="page-header">
         <h1 className="page-title"><span className="gradient-text">Opportunities</span></h1>
-        <p className="page-subtitle">Browse {MOCK_OPPORTUNITIES.length} scholarships, fellowships, and grants</p>
+        <p className="page-subtitle">Browse {opportunities.length} scholarships, fellowships, and grants</p>
       </div>
 
       {/* Search + Filters */}
@@ -141,9 +158,11 @@ export default function OpportunitiesPage() {
 
       {/* Results */}
       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-        Showing <strong style={{ color: 'var(--text-primary)' }}>{filtered.length}</strong> of {MOCK_OPPORTUNITIES.length} opportunities
+        Showing <strong style={{ color: 'var(--text-primary)' }}>{filtered.length}</strong> of {opportunities.length} opportunities
       </div>
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+      ) : filtered.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
           <Search size={32} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
           <div>No opportunities match your filters.</div>

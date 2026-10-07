@@ -12,8 +12,21 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, pagination_params
 from app.models.student import Student
 from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse
+from app.core.demo import TEMP_STUDENT_PROFILES
+from pydantic import BaseModel
+from datetime import datetime
+
+class DemoProfileRequest(BaseModel):
+    temporary_session_id: str
+    profile: StudentCreate
 
 router = APIRouter()
+
+@router.post("/demo")
+def store_demo_profile(request: DemoProfileRequest):
+    """LOCAL DEMO MODE: Store student profile in-memory only."""
+    TEMP_STUDENT_PROFILES[request.temporary_session_id] = request.profile.model_dump()
+    return {"status": "success", "session_id": request.temporary_session_id}
 
 
 @router.post("/", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
@@ -45,6 +58,16 @@ def get_student(
     db: Session = Depends(get_db)
 ) -> Any:
     """Retrieve a specific student profile by ID."""
+    id_str = str(id)
+    if id_str in TEMP_STUDENT_PROFILES:
+        student_data = TEMP_STUDENT_PROFILES[id_str]
+        return StudentResponse(
+            id=id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            **student_data
+        )
+
     student = db.query(Student).filter(Student.id == id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")

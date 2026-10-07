@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   FileText, CheckCircle2, Clock, XCircle, BarChart2,
   ExternalLink, Database, Upload, Info, ChevronDown, ChevronUp,
 } from 'lucide-react';
-import { MOCK_SOURCES } from '@/lib/mock-data';
 import type { SourceDocument } from '@/lib/types';
+import { getDocuments } from '@/lib/api';
 
 function statusMeta(status: SourceDocument['ingestion_status']) {
   const map = {
@@ -112,10 +112,27 @@ function SourceCard({ doc }: { doc: SourceDocument }) {
 }
 
 export default function SourcesPage() {
-  const ingested = MOCK_SOURCES.filter((d) => d.ingestion_status === 'Processed');
-  const pending  = MOCK_SOURCES.filter((d) => d.ingestion_status === 'Pending');
-  const failed   = MOCK_SOURCES.filter((d) => d.ingestion_status === 'Failed');
-  const totalChunks = MOCK_SOURCES.reduce((sum, d) => sum + (d.chunk_count ?? 0), 0);
+  const [sources, setSources] = useState<SourceDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchSources() {
+      try {
+        const docs = await getDocuments();
+        setSources(docs);
+      } catch (err) {
+        console.error("Failed to load documents", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSources();
+  }, []);
+
+  const ingested = sources.filter((d) => d.ingestion_status === 'Processed');
+  const pending  = sources.filter((d) => d.ingestion_status === 'Pending');
+  const failed   = sources.filter((d) => d.ingestion_status === 'Failed');
+  const totalChunks = sources.reduce((sum, d) => sum + (d.chunk_count ?? 0), 0);
 
   return (
     <div className="animate-fade-in">
@@ -134,8 +151,8 @@ export default function SourcesPage() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.75rem' }}>
-        {[
-          { value: MOCK_SOURCES.length, label: 'Total Documents', color: '#6366f1', icon: <Database size={18} color="#6366f1" /> },
+        {[ 
+          { value: sources.length, label: 'Total Documents', color: '#6366f1', icon: <Database size={18} color="#6366f1" /> },
           { value: ingested.length,    label: 'Ingested',         color: '#10b981', icon: <CheckCircle2 size={18} color="#10b981" /> },
           { value: pending.length,     label: 'Pending',          color: '#f59e0b', icon: <Clock size={18} color="#f59e0b" /> },
           { value: totalChunks,        label: 'Chunks Indexed',   color: '#06b6d4', icon: <BarChart2 size={18} color="#06b6d4" /> },
@@ -165,11 +182,17 @@ export default function SourcesPage() {
 
       {/* Document list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-        {MOCK_SOURCES.map((doc, i) => (
-          <div key={doc.id} style={{ animationDelay: `${i * 0.07}s` }}>
-            <SourceCard doc={doc} />
-          </div>
-        ))}
+        {loading ? (
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading documents...</div>
+        ) : sources.length === 0 ? (
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No source documents found.</div>
+        ) : (
+          sources.map((doc, i) => (
+            <div key={doc.id} style={{ animationDelay: `${i * 0.07}s` }}>
+              <SourceCard doc={doc} />
+            </div>
+          ))
+        )}
       </div>
 
       {/* Disclaimer */}

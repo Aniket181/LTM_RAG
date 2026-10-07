@@ -41,6 +41,9 @@ export default function Sidebar() {
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
               RAG INTELLIGENCE
             </div>
+            <div style={{ marginTop: '0.25rem', display: 'inline-block', fontSize: '0.55rem', fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid rgba(245,158,11,0.2)' }}>
+              LOCAL DEMO MODE
+            </div>
           </div>
         </div>
       </div>

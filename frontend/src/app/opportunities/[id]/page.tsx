@@ -1,59 +1,43 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, CheckCircle2, XCircle, AlertCircle, HelpCircle,
   ExternalLink, Clock, Calendar, FileText, GraduationCap,
   IndianRupee, Info,
 } from 'lucide-react';
-import { MOCK_OPPORTUNITIES, MOCK_RECOMMENDATIONS } from '@/lib/mock-data';
-import type { RuleResult } from '@/lib/types';
+import { getOpportunity } from '@/lib/api';
+import type { Opportunity } from '@/lib/types';
 
 function daysUntil(d: string) { return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000); }
 
-function RuleRow({ rule }: { rule: RuleResult }) {
-  const colorMap = { PASS: '#10b981', FAIL: '#ef4444', WARN: '#f59e0b', UNKNOWN: '#6b7280' };
-  const iconMap = {
-    PASS: <CheckCircle2 size={14} color="#10b981" />,
-    FAIL: <XCircle size={14} color="#ef4444" />,
-    WARN: <AlertCircle size={14} color="#f59e0b" />,
-    UNKNOWN: <HelpCircle size={14} color="#6b7280" />,
-  };
-  const classMap = { PASS: 'rule-pass', FAIL: 'rule-fail', WARN: 'rule-warn', UNKNOWN: 'rule-unknown' };
-
-  return (
-    <div className={`rule-row ${classMap[rule.result]}`}>
-      {iconMap[rule.result]}
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.82rem' }}>{rule.rule_name.replace('Rule', ' Check')}</div>
-        <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: 2 }}>{rule.detail}</div>
-      </div>
-      <div style={{ fontSize: '0.72rem', color: colorMap[rule.result], fontWeight: 700, whiteSpace: 'nowrap' }}>
-        {rule.result}
-      </div>
-    </div>
-  );
-}
-
-function ScoreBar({ label, value, color = '#6366f1' }: { label: string; value: number; color?: string }) {
-  return (
-    <div style={{ marginBottom: '0.625rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-        <span>{label}</span>
-        <span style={{ fontWeight: 600, color }}>{Math.round(value * 100)}%</span>
-      </div>
-      <div className="progress-bar">
-        <div style={{ height: '100%', width: `${value * 100}%`, background: color, borderRadius: 9999, transition: 'width 0.8s ease' }} />
-      </div>
-    </div>
-  );
-}
-
 export default function OpportunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const opp = MOCK_OPPORTUNITIES.find((o) => o.id === id);
-  const rec = MOCK_RECOMMENDATIONS.find((r) => r.opportunity.id === id);
+  const [opp, setOpp] = useState<Opportunity | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchO() {
+      try {
+        const o = await getOpportunity(id);
+        setOpp(o);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchO();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="animate-fade-in" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+        Loading opportunity details...
+      </div>
+    );
+  }
 
   if (!opp) {
     return (
@@ -131,33 +115,6 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
       {/* Main Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
         <div>
-          {/* Eligibility Engine Result */}
-          {rec && (
-            <div className="card" style={{ marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <div className="section-title" style={{ marginBottom: 0 }}>Eligibility Analysis</div>
-                <span style={{
-                  padding: '0.3rem 0.9rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700,
-                  background: `${eligibilityColors[rec.eligibility.overall_status]}18`,
-                  color: eligibilityColors[rec.eligibility.overall_status],
-                  border: `1px solid ${eligibilityColors[rec.eligibility.overall_status]}33`,
-                }}>
-                  {rec.eligibility.overall_status.replace('_', ' ')}
-                </span>
-              </div>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                {rec.eligibility.summary}
-              </p>
-              <div>
-                {rec.eligibility.rule_results.map((r, i) => <RuleRow key={i} rule={r} />)}
-              </div>
-              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(99,102,241,0.06)', borderRadius: '0.625rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                <Info size={11} style={{ display: 'inline', marginRight: 4 }} />
-                Eligibility is determined by a deterministic rule engine, not by the AI. Verify from official source before applying.
-              </div>
-            </div>
-          )}
-
           {/* Required Documents */}
           {opp.required_documents && opp.required_documents.length > 0 && (
             <div className="card" style={{ marginBottom: '1.25rem' }}>
@@ -210,26 +167,6 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
               </div>
             ))}
           </div>
-
-          {/* Match Score */}
-          {rec && rec.score && (
-            <div className="card">
-              <div className="section-title">Match Score Breakdown</div>
-              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 900 }} className="gradient-text">
-                  {Math.round((rec.score.total_score / 100) * 100)}%
-                </span>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Overall match score</div>
-              </div>
-              <ScoreBar label="Financial Need (30%)"  value={rec.score.financial_need_score / 30} color="#10b981" />
-              <ScoreBar label="Academic Merit (20%)"  value={rec.score.academic_merit_score / 20} color="#8b5cf6" />
-              <ScoreBar label="Demographic (20%)"     value={rec.score.demographic_match_score / 20} color="#06b6d4" />
-              <ScoreBar label="Deadline (30%)"        value={rec.score.deadline_score / 30} color="#f59e0b" />
-              <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                Match score is a system-generated relevance indicator, not official eligibility.
-              </div>
-            </div>
-          )}
 
           {/* Source */}
           {opp.source_document && (
