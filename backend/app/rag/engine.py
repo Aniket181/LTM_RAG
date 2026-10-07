@@ -44,11 +44,11 @@ Rules:
         )
         
         # Filter out chunks that are semantically irrelevant
-        # BGE embeddings typically yield distance > 0.40 for completely unrelated text.
+        # Recalibrated for Phase G corpus (884 chunks): BGE distance > 0.32 is typically noise
         filtered_results = []
         for res in results:
             dist = res.get("distance_score")
-            if dist is not None and dist > 0.40:
+            if dist is not None and dist > 0.32:
                 continue
             filtered_results.append(res)
             

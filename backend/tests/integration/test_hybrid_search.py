@@ -45,7 +45,7 @@ def client(override_db):
 
 def test_keyword_search_api(client, db_session):
     """Test the /api/v1/search/keyword endpoint."""
-    doc = SourceDocument(title="Test Keyword Doc", ingestion_status="Processed")
+    doc = SourceDocument(title="Test Keyword Doc", source_category="UGC", source_organization="UGC Test Dept", ingestion_status="Processed")
     db_session.add(doc)
     db_session.commit()
     
@@ -79,7 +79,7 @@ def test_keyword_search_api(client, db_session):
 def test_hybrid_search_api(client, db_session):
     """Test the /api/v1/search/hybrid endpoint."""
     embedder = LocalEmbedder()
-    doc = SourceDocument(title="Test Hybrid Doc", ingestion_status="Processed")
+    doc = SourceDocument(title="Test Hybrid Doc", source_category="UGC", source_organization="UGC Test Dept", ingestion_status="Processed")
     db_session.add(doc)
     db_session.commit()
     

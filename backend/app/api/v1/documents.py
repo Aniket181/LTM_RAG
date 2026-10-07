@@ -116,6 +116,9 @@ def upload_document(
     file: UploadFile = File(...),
     title: str = Form(None),
     document_type: str = Form("Scholarship Guideline"),
+    source_category: str = Form(...),
+    source_organization: str = Form(...),
+    publication_date: date = Form(None),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -123,6 +126,13 @@ def upload_document(
     """
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+        
+    allowed_categories = {"NSP", "Government of India", "UGC", "AICTE"}
+    if source_category not in allowed_categories:
+        raise HTTPException(
+            status_code=422,
+            detail=f"source_category must be one of {allowed_categories}"
+        )
         
     # Generate unique filename to prevent collisions
     unique_filename = f"{uuid.uuid4()}_{file.filename}"
@@ -135,6 +145,9 @@ def upload_document(
     # Create database record
     new_doc = SourceDocument(
         title=title or file.filename,
+        source_category=source_category,
+        source_organization=source_organization,
+        publication_date=publication_date,
         source_url=file.filename, # Using filename as fallback
         document_type=document_type,
         file_path=file_path,

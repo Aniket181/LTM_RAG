@@ -23,10 +23,13 @@ class SourceDocument(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "source_documents"
 
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    source_category: Mapped[str] = mapped_column(String(100), nullable=False)
+    source_organization: Mapped[str] = mapped_column(String(255), nullable=False)
     source_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     document_type: Mapped[str] = mapped_column(String(100), nullable=False, default="Scholarship Guideline")
     file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     academic_year: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    publication_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     last_verified_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     ingestion_status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending", index=True)
 
@@ -52,10 +55,13 @@ class SourceDocument(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         return {
             "id": str(self.id),
             "title": self.title,
+            "source_category": self.source_category,
+            "source_organization": self.source_organization,
             "source_url": self.source_url,
             "document_type": self.document_type,
             "file_path": self.file_path,
             "academic_year": self.academic_year,
+            "publication_date": self.publication_date.isoformat() if self.publication_date else None,
             "last_verified_date": self.last_verified_date.isoformat() if self.last_verified_date else None,
             "ingestion_status": self.ingestion_status,
             "chunk_count": len(self.chunks) if self.chunks else 0,

@@ -87,7 +87,7 @@ def test_embedder_initialization():
 def test_pgvector_storage_and_retrieval(db_session):
     """Test storing and retrieving a DocumentChunk with pgvector."""
     # 1. Create a parent SourceDocument
-    doc = SourceDocument(title="Vector Test Doc", ingestion_status="Processed")
+    doc = SourceDocument(title="Vector Test Doc", source_category="AICTE", source_organization="AICTE Testing", ingestion_status="Processed")
     db_session.add(doc)
     db_session.commit()
     db_session.refresh(doc)
@@ -120,7 +120,7 @@ def test_semantic_search_api(client, db_session):
     # Setup test data
     embedder = LocalEmbedder()
     
-    doc = SourceDocument(title="Scholarship API Doc", ingestion_status="Processed")
+    doc = SourceDocument(title="Scholarship API Doc", source_category="AICTE", source_organization="AICTE Testing", ingestion_status="Processed")
     db_session.add(doc)
     db_session.commit()
     

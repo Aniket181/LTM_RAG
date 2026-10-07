@@ -1,0 +1,16 @@
+{
+  "_instructions": "Fill in all FILL_IN values for each PDF you download. source_category MUST be one of: NSP | Government of India | UGC | AICTE",
+  "_example": {
+    "aicte_pragati_scholarship_2024_25.pdf": {
+      "opportunity_name": "AICTE Pragati Scholarship for Girl Students",
+      "document_title": "AICTE Pragati Scholarship Scheme Guidelines 2024-25",
+      "source_category": "AICTE",
+      "source_organization": "All India Council for Technical Education",
+      "official_source_url": "https://www.aicte-india.org/schemes/students-development-schemes/Pragati",
+      "academic_year": "2024-2025",
+      "publication_date": "2024-09-01",
+      "document_type": "Scholarship Guideline",
+      "notes": ""
+    }
+  }
+}

@@ -51,12 +51,14 @@ def seed_rag_data(db_session, monkeypatch):
     """Seed db with controlled test documents and chunks for RAG."""
     doc_a = SourceDocument(
         id=uuid.uuid4(), title="Doc A", source_url="doc_a.pdf",
+        source_category="Government of India", source_organization="Test Ministry",
         document_type="Guideline", file_path="/fake/a.pdf",
         ingestion_status="Processed"
     )
     
     doc_b = SourceDocument(
         id=uuid.uuid4(), title="Doc B", source_url="doc_b.pdf",
+        source_category="UGC", source_organization="UGC Test",
         document_type="Guideline", file_path="/fake/b.pdf",
         ingestion_status="Processed"
     )

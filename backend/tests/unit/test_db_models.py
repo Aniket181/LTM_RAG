@@ -81,6 +81,8 @@ def test_source_document_and_chunks_relationship(db_session):
     """Verify SourceDocument and cascading DocumentChunks relationship."""
     doc = SourceDocument(
         title="AICTE Pragati Scholarship Scheme Guidelines",
+        source_category="AICTE",
+        source_organization="All India Council for Technical Education",
         source_url="https://www.aicte-india.org/schemes/students-development-schemes/Pragati",
         document_type="Official Guidelines",
         academic_year="2025-2026",

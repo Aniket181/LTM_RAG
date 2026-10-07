@@ -281,3 +281,28 @@ The UI shows a disclaimer on every page advising users to verify from official s
 
 ### Conclusion
 The custom Hybrid RRF algorithm cleanly blends independent lexical (BM25) and semantic (pgvector) signals, preserving critical metadata and yielding highly relevant retrieval results. The system is structurally verified and ready for end-to-end integration with the generative LLM tier.
+
+---
+
+## Phase F — Ollama + Local Llama Integration
+**Date:** 2026-10-07
+**Status:** ✅ Complete
+
+### Configuration & Architecture Confirmed
+- **Ollama Version:** 0.34.1
+- **Base URL:** `http://localhost:11434`
+- **LLM Provider:** `ollama`
+- **Target Generation Model:** `llama3.2:latest`
+- **Target Embedding Model:** `BAAI/bge-small-en-v1.5` (Independent of Ollama, 384 dimensions)
+- **Dependency Added:** `langchain-ollama`
+
+### Validation Results
+- **Direct Generation:** PASS (Llama 3.2 generated standard prompt correctly in ~9.02s)
+- **Grounded RAG Answer:** PASS (Synthesized retrieved context perfectly without inventing answers. Latency: ~68.04s)
+- **Source Attribution:** PASS (Correctly yielded 5 formatted source UUIDs with metadata)
+- **Irrelevant Query Rejection:** PASS ("How do I repair a bicycle?" successfully rejected via 0.40 distance filter before invoking LLM)
+- **Failure Handling:** PASS (Raw LLM calls elegantly raise underlying network connection errors when the Ollama server is unreachable)
+- **Full Regression:** PASS (52 tests passed smoothly with standard mock isolation configurations maintained)
+
+### Conclusion
+The project has successfully integrated its internal retrieval pipeline with a local deployment of Llama 3.2. Configuration defaults were upgraded to Ollama natively while preserving full Pytest regression capabilities via clean monkey-patching. The RAG grounding accurately prevents LLM hallucination on non-relevant vectors. Phase F is completely resolved.

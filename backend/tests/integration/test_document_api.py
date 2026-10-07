@@ -71,7 +71,9 @@ def _upload_dummy_document(dummy_pdf, client):
     }
     data = {
         "title": "Test Scholarship Guidelines",
-        "document_type": "Scholarship Guideline"
+        "document_type": "Scholarship Guideline",
+        "source_category": "Government of India",
+        "source_organization": "Ministry of Education"
     }
     response = client.post("/api/v1/documents/upload", files=files, data=data)
     assert response.status_code == 201
@@ -85,7 +87,9 @@ def test_upload_document(dummy_pdf, client):
     }
     data = {
         "title": "Test Scholarship Guidelines",
-        "document_type": "Scholarship Guideline"
+        "document_type": "Scholarship Guideline",
+        "source_category": "Government of India",
+        "source_organization": "Ministry of Education"
     }
     
     response = client.post("/api/v1/documents/upload", files=files, data=data)
@@ -100,7 +104,7 @@ def test_get_documents(dummy_pdf, client):
     """Test retrieving list of documents."""
     doc_id = _upload_dummy_document(dummy_pdf, client)
     
-    response = client.get("/api/v1/documents/")
+    response = client.get("/api/v1/documents/?limit=100")
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 1
@@ -119,3 +123,20 @@ def test_get_document_by_id(dummy_pdf, client):
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == doc_id
+
+
+def test_upload_document_invalid_category(dummy_pdf, client):
+    """Test uploading a document with an invalid source category."""
+    files = {
+        "file": ("test_scholarship.pdf", dummy_pdf, "application/pdf")
+    }
+    data = {
+        "title": "Test Scholarship Guidelines",
+        "document_type": "Scholarship Guideline",
+        "source_category": "Wikipedia",
+        "source_organization": "Random Editor"
+    }
+    
+    response = client.post("/api/v1/documents/upload", files=files, data=data)
+    assert response.status_code == 422
+    assert "source_category must be one of" in response.text
