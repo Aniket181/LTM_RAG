@@ -35,12 +35,12 @@ class EligibilityResultSchema(BaseModel):
 class EligibilityCheckRequest(BaseModel):
     """Request payload to evaluate eligibility for a student against opportunities."""
 
-    student_id: uuid.UUID
+    student_id: str
     opportunity_ids: Optional[List[uuid.UUID]] = None
 
 
 class EligibilityCheckResponse(BaseModel):
     """Response payload containing evaluation results."""
 
-    student_id: uuid.UUID
+    student_id: str
     evaluations: List[EligibilityResultSchema]

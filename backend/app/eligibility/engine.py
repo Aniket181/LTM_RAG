@@ -11,7 +11,7 @@ from app.models.opportunity import Opportunity
 from app.models.eligibility_check_log import EligibilityCheckLog
 from app.schemas.eligibility import EligibilityResultSchema, RuleResultSchema
 from app.eligibility.rules import AcademicRule, FinancialRule, DemographicRule
-
+from app.core.demo import TEMP_STUDENT_PROFILES
 
 class EligibilityEngine:
     """
@@ -59,7 +59,7 @@ class EligibilityEngine:
             unknown_rules = [r.rule_name for r in rule_results if r.result == "UNKNOWN"]
             summary = f"Insufficient information to determine eligibility for: {', '.join(unknown_rules)}."
             
-        # 4. Save audit log to DB
+        # 4. Save audit log to DB (ignore for demo students not in DB)
         log = EligibilityCheckLog(
             student_id=student.id,
             opportunity_id=opportunity.id,
@@ -67,8 +67,11 @@ class EligibilityEngine:
             rule_results=[r.model_dump() for r in rule_results],
             summary=summary
         )
-        self.db.add(log)
-        self.db.commit()
+        try:
+            self.db.add(log)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
         
         # 5. Return structured result
         return EligibilityResultSchema(

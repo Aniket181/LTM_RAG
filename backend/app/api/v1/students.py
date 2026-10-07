@@ -54,21 +54,31 @@ def get_students(
 
 @router.get("/{id}", response_model=StudentResponse)
 def get_student(
-    id: uuid.UUID,
+    id: str,
     db: Session = Depends(get_db)
 ) -> Any:
     """Retrieve a specific student profile by ID."""
-    id_str = str(id)
-    if id_str in TEMP_STUDENT_PROFILES:
-        student_data = TEMP_STUDENT_PROFILES[id_str]
+    if id in TEMP_STUDENT_PROFILES:
+        student_data = TEMP_STUDENT_PROFILES[id]
+        
+        try:
+            parsed_id = uuid.UUID(id)
+        except ValueError:
+            parsed_id = uuid.uuid4()
+            
         return StudentResponse(
-            id=id,
+            id=parsed_id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
             **student_data
         )
 
-    student = db.query(Student).filter(Student.id == id).first()
+    try:
+        parsed_id = uuid.UUID(id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    student = db.query(Student).filter(Student.id == parsed_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     return student

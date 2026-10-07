@@ -19,22 +19,30 @@ router = APIRouter()
 
 @router.get("/{student_id}", response_model=List[RankedOpportunityResponse])
 def get_recommendations(
-    student_id: uuid.UUID,
+    student_id: str,
     top_k: Optional[int] = Query(None, gt=0, description="Number of top recommendations to return"),
     db: Session = Depends(get_db)
 ):
     """
     Evaluates eligibility and scores active opportunities to return a ranked recommendation list.
     """
-    id_str = str(student_id)
-    if id_str in TEMP_STUDENT_PROFILES:
-        profile_data = TEMP_STUDENT_PROFILES[id_str]
+    if student_id in TEMP_STUDENT_PROFILES:
+        profile_data = TEMP_STUDENT_PROFILES[student_id]
         student = Student(**profile_data)
-        student.id = student_id
+        try:
+            parsed_id = uuid.UUID(student_id)
+        except ValueError:
+            parsed_id = uuid.uuid4()
+        student.id = parsed_id
         student.created_at = datetime.utcnow()
         student.updated_at = datetime.utcnow()
     else:
-        student = db.query(Student).filter(Student.id == student_id).first()
+        try:
+            parsed_id = uuid.UUID(student_id)
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Student not found")
+            
+        student = db.query(Student).filter(Student.id == parsed_id).first()
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
         
