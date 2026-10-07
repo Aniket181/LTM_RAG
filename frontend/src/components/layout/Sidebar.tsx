@@ -69,7 +69,7 @@ export default function Sidebar() {
             <span style={{ color: '#10b981', fontWeight: 600 }}>System Online</span>
           </div>
           <div style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            <div>LLM: Mock Mode</div>
+            <div>LLM: Llama 3.2 / Ollama</div>
             <div>Embeddings: BGE v1.5</div>
           </div>
         </div>

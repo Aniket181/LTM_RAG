@@ -3,138 +3,33 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Send, Bot, User, Sparkles, BookOpen, ExternalLink,
-  AlertCircle, RefreshCw, Info, Zap,
+  AlertCircle, RefreshCw, CheckCircle2, XCircle, HelpCircle,
 } from 'lucide-react';
-import type { ChatMessage, RAGSource } from '@/lib/types';
+import type { ChatMessage, SourceAttribution, EligibilityResult } from '@/lib/types';
+import { useStudent } from '@/lib/useStudent';
+import { askQuestion, evaluateEligibility } from '@/lib/api';
 
-// ---- Mock RAG responses keyed by keyword patterns ----
-const MOCK_RESPONSES: Array<{ pattern: RegExp; answer: string; sources: RAGSource[] }> = [
-  {
-    pattern: /pragati|aicte.*girl|girl.*aicte/i,
-    answer: `**AICTE Pragati Scholarship** is designed for girl students pursuing technical education at AICTE-approved institutions.
-
-**Key Details:**
-- **Amount:** ₹50,000 per annum (covers tuition fees and incidentals)
-- **Eligibility:** Female students in B.Tech, B.E, B.Arch, or Diploma programmes
-- **Income Limit:** Annual family income below ₹8,00,000
-- **Application:** Via the AICTE portal (aicte-india.org)
-- **Status:** Currently Active for 2025-26
-
-**Required Documents:** Admission letter, income certificate, Aadhaar card, bank passbook, previous year marksheet.
-
-⚠️ *Please verify the current deadline and eligibility criteria from the official AICTE portal before applying.*`,
-    sources: [
-      { document_title: 'AICTE Pragati & Saksham Scholarship Guidelines 2025', source_url: 'https://aicte-india.org', section: 'Eligibility and Benefits', last_verified: '2025-08-15' },
-    ],
-  },
-  {
-    pattern: /csss|central sector|ministry.*education/i,
-    answer: `**Central Sector Scheme of Scholarships (CSSS)** is a major scholarship by the Ministry of Education for meritorious students from low-income families.
-
-**Key Details:**
-- **Amount:** ₹10,000/year for UG students; ₹20,000/year for PG students
-- **Eligibility:** Students who scored above 80% in Class XII from recognized boards
-- **Income Limit:** Annual family income below ₹8,00,000
-- **Education Level:** UG and PG
-- **Institution Type:** Government, Deemed, or Central Universities
-- **Duration:** Up to 3 years (renewable based on performance)
-
-**Application:** Apply through the National Scholarship Portal at scholarships.gov.in
-
-⚠️ *Eligibility criteria and deadlines are subject to change. Always verify from the official NSP portal.*`,
-    sources: [
-      { document_title: 'CSSS Guidelines 2025-26', source_url: 'https://scholarships.gov.in', section: 'Scheme Overview', last_verified: '2025-09-01' },
-    ],
-  },
-  {
-    pattern: /income.*limit|family income|financial/i,
-    answer: `The income eligibility limits vary significantly across scholarship schemes. Here is a summary based on available source documents:
-
-| Scholarship | Max. Family Income |
-|---|---|
-| CSSS (Central Sector) | ₹8,00,000/year |
-| AICTE Pragati | ₹8,00,000/year |
-| AICTE Saksham | ₹8,00,000/year |
-| Post-Matric SC | ₹2,50,000/year |
-| NSP Pre-Matric Minority | ₹1,00,000/year |
-| PM Scholarship (PMSS) | No income limit |
-| UGC Single Girl Child | No income limit |
-
-**Note:** Income is typically assessed as total annual household income from all sources. An income certificate from a competent authority is required.
-
-⚠️ *These figures are from official guidelines last verified in 2025. Verify current limits before applying.*`,
-    sources: [
-      { document_title: 'CSSS Guidelines 2025-26', source_url: 'https://scholarships.gov.in', last_verified: '2025-09-01' },
-      { document_title: 'AICTE Pragati & Saksham Scholarship Guidelines 2025', source_url: 'https://aicte-india.org', last_verified: '2025-08-15' },
-      { document_title: 'NSP Pre-Matric Minority Scholarship Guidelines', source_url: 'https://scholarships.gov.in', last_verified: '2025-08-20' },
-    ],
-  },
-  {
-    pattern: /b\.?tech|engineering|technical/i,
-    answer: `Several scholarship and fellowship schemes are available for **B.Tech / Engineering students**:
-
-1. **CSSS (Central Sector)** — ₹10,000/yr, requires 80%+ in Class XII, income < ₹8L
-2. **AICTE Pragati** — ₹50,000/yr, for girl students in technical programmes
-3. **AICTE Saksham** — ₹50,000/yr, for differently-abled students
-4. **PM Scholarship Scheme** — ₹2,500–3,000/month, for wards of ex-servicemen
-5. **Post-Matric SC Scholarship** — for SC students, income < ₹2.5L
-
-**How to search:** Use the Opportunities page to filter by course (B.Tech) and your category to see relevant results.
-
-⚠️ *Verify all eligibility criteria from official portals before applying.*`,
-    sources: [
-      { document_title: 'CSSS Guidelines 2025-26', source_url: 'https://scholarships.gov.in', last_verified: '2025-09-01' },
-      { document_title: 'AICTE Pragati & Saksham Scholarship Guidelines 2025', source_url: 'https://aicte-india.org', last_verified: '2025-08-15' },
-    ],
-  },
-  {
-    pattern: /phd|research|fellowship|inspire/i,
-    answer: `For **PhD / Research students**, the main fellowship available in our knowledge base is:
-
-**DST INSPIRE Fellowship**
-- **Provider:** Department of Science & Technology, Government of India
-- **Amount:** ₹31,000/month + ₹20,000/year research grant
-- **Duration:** 5 years
-- **Eligibility:** Students pursuing PhD in natural/basic sciences (Physics, Chemistry, Mathematics, Biology, Earth Sciences) with 60%+ in UG/PG
-- **Status:** Upcoming (applications expected Jan–Mar 2026)
-- **Apply via:** online-inspire.gov.in
-
-For other disciplines, the **UGC-NET JRF** and **CSIR NET Fellowship** are also available — though these are not yet in our current knowledge base.
-
-⚠️ *The available source information in this system is limited to documents currently ingested. Verify from the official DST/UGC portal.*`,
-    sources: [
-      { document_title: 'DST INSPIRE Fellowship Programme Guidelines', source_url: 'https://online-inspire.gov.in', section: 'Eligibility and Award Details', last_verified: '2025-06-30' },
-    ],
-  },
+// ── Eligibility Intent Detection ──────────────────────────────────────────
+const ELIGIBILITY_PATTERNS = [
+  /which scholarships? (am i|i am|can i|do i) (eligible|qualify|get)/i,
+  /am i eligible/i,
+  /do i qualify/i,
+  /scholarships? for me/i,
+  /what (can|scholarships?) (i|am i) (apply|eligible)/i,
+  /my eligible/i,
+  /scholarships? i (can|could) get/i,
+  /eligible.*scholarship/i,
+  /scholarship.*eligible/i,
+  /why am i eligible/i,
+  /qualify for/i,
 ];
 
-function getResponse(query: string): { answer: string; sources: RAGSource[] } {
-  for (const r of MOCK_RESPONSES) {
-    if (r.pattern.test(query)) return { answer: r.answer, sources: r.sources };
-  }
-  return {
-    answer: `I searched the available scholarship knowledge base for: *"${query}"*
-
-The available source documents do not contain specific information to fully answer this query.
-
-**What I can help with:**
-- Specific scholarship details (CSSS, AICTE Pragati, INSPIRE, etc.)
-- Income eligibility limits across schemes
-- Scholarships for specific courses (B.Tech, Engineering)
-- PhD / research fellowships
-
-Try asking something like:
-- *"What is the income limit for CSSS?"*
-- *"Scholarships for B.Tech female students"*
-- *"AICTE Pragati eligibility criteria"*
-- *"PhD fellowships in science"*
-
-⚠️ *This is a mock RAG response. Real LLM integration will be connected in Phase 10.*`,
-    sources: [],
-  };
+function isEligibilityQuestion(query: string): boolean {
+  return ELIGIBILITY_PATTERNS.some((p) => p.test(query));
 }
 
-function SourceCard({ source }: { source: RAGSource }) {
+// ── Source Card ───────────────────────────────────────────────────────────
+function SourceCard({ source }: { source: SourceAttribution }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
@@ -144,9 +39,12 @@ function SourceCard({ source }: { source: RAGSource }) {
     }}>
       <BookOpen size={11} color="#818cf8" style={{ flexShrink: 0, marginTop: 2 }} />
       <div>
-        <div style={{ color: '#a5b4fc', fontWeight: 600 }}>{source.document_title}</div>
-        {source.section && <div style={{ color: 'var(--text-muted)' }}>§ {source.section}</div>}
-        {source.last_verified && <div style={{ color: 'var(--text-muted)' }}>Verified: {source.last_verified}</div>}
+        <div style={{ color: '#a5b4fc', fontWeight: 600 }}>
+          {source.source_title ?? source.opportunity_name ?? 'Official Document'}
+        </div>
+        {source.page_number && (
+          <div style={{ color: 'var(--text-muted)' }}>Page {source.page_number}</div>
+        )}
         {source.source_url && (
           <a href={source.source_url} target="_blank" rel="noopener noreferrer"
             style={{ color: '#6366f1', display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
@@ -158,29 +56,48 @@ function SourceCard({ source }: { source: RAGSource }) {
   );
 }
 
+// ── Eligibility Summary Card ──────────────────────────────────────────────
+function EligibilityCard({ result }: { result: EligibilityResult }) {
+  const statusMeta: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+    ELIGIBLE: { icon: <CheckCircle2 size={12} color="#10b981" />, color: '#10b981', label: 'Eligible' },
+    NOT_ELIGIBLE: { icon: <XCircle size={12} color="#ef4444" />, color: '#ef4444', label: 'Not Eligible' },
+    POTENTIALLY_ELIGIBLE: { icon: <AlertCircle size={12} color="#f59e0b" />, color: '#f59e0b', label: 'Potentially Eligible' },
+    INSUFFICIENT_INFORMATION: { icon: <HelpCircle size={12} color="#6b7280" />, color: '#6b7280', label: 'More Info Needed' },
+  };
+  const meta = statusMeta[result.overall_status] ?? statusMeta.INSUFFICIENT_INFORMATION;
+
+  return (
+    <div style={{
+      padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+      background: `${meta.color}0f`, border: `1px solid ${meta.color}28`,
+      fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.4rem',
+    }}>
+      {meta.icon}
+      <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
+      {result.summary && (
+        <span style={{ color: 'var(--text-muted)', marginLeft: '0.25rem' }}>· {result.summary}</span>
+      )}
+    </div>
+  );
+}
+
+// ── Chat Bubble ───────────────────────────────────────────────────────────
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user';
 
-  const renderMarkdown = (text: string) => {
-    return text
-      .split('\n')
-      .map((line, i) => {
-        if (line.startsWith('**') && line.endsWith('**')) {
-          return <p key={i} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{line.replace(/\*\*/g, '')}</p>;
-        }
-        if (line.startsWith('- ') || line.startsWith('* ')) {
-          return <li key={i} style={{ marginLeft: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{line.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')}</li>;
-        }
-        if (line.startsWith('⚠️')) {
-          return <p key={i} style={{ color: '#f59e0b', fontSize: '0.78rem', marginTop: '0.5rem', fontStyle: 'italic' }}>{line}</p>;
-        }
-        if (line.match(/^\d+\./)) {
-          return <li key={i} style={{ marginLeft: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{line.replace(/^\d+\.\s/, '').replace(/\*\*(.*?)\*\*/g, '$1')}</li>;
-        }
-        if (line === '') return <br key={i} />;
-        return <p key={i} style={{ color: 'var(--text-secondary)', marginBottom: '0.2rem', fontSize: '0.85rem' }}>{line.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')}</p>;
-      });
-  };
+  const renderText = (text: string) =>
+    text.split('\n').map((line, i) => {
+      if (line.startsWith('**') && line.endsWith('**'))
+        return <p key={i} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{line.replace(/\*\*/g, '')}</p>;
+      if (line.startsWith('- ') || line.startsWith('* '))
+        return <li key={i} style={{ marginLeft: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{line.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')}</li>;
+      if (line.startsWith('⚠️'))
+        return <p key={i} style={{ color: '#f59e0b', fontSize: '0.78rem', marginTop: '0.5rem', fontStyle: 'italic' }}>{line}</p>;
+      if (line.match(/^\d+\./))
+        return <li key={i} style={{ marginLeft: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{line.replace(/^\d+\.\s/, '').replace(/\*\*(.*?)\*\*/g, '$1')}</li>;
+      if (line === '') return <br key={i} />;
+      return <p key={i} style={{ color: 'var(--text-secondary)', marginBottom: '0.2rem', fontSize: '0.85rem' }}>{line.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')}</p>;
+    });
 
   if (isUser) {
     return (
@@ -202,12 +119,26 @@ function ChatBubble({ message }: { message: ChatMessage }) {
       </div>
       <div style={{ flex: 1, maxWidth: '85%' }}>
         <div className="chat-bubble-ai">
-          <div>{renderMarkdown(message.content)}</div>
+          <div>{renderText(message.content)}</div>
         </div>
+        {/* Eligibility results */}
+        {message.eligibilityContext && message.eligibilityContext.length > 0 && (
+          <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+            {message.eligibilityContext.slice(0, 5).map((r, i) => (
+              <EligibilityCard key={i} result={r} />
+            ))}
+            {message.eligibilityContext.length > 5 && (
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                + {message.eligibilityContext.length - 5} more results
+              </div>
+            )}
+          </div>
+        )}
+        {/* Source attribution */}
         {message.sources && message.sources.length > 0 && (
           <div style={{ marginTop: '0.625rem' }}>
             <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.35rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Sources
+              Official Sources
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
               {message.sources.map((s, i) => <SourceCard key={i} source={s} />)}
@@ -235,22 +166,24 @@ function TypingIndicator() {
 }
 
 const SUGGESTIONS = [
-  'What is the income limit for CSSS scholarship?',
-  'Scholarships for B.Tech female students',
-  'AICTE Pragati eligibility criteria',
-  'PhD fellowships in science and technology',
+  'Which scholarships am I eligible for?',
+  'What documents are required for AICTE Pragati?',
+  'What is the income limit for central sector scholarship?',
+  'What is the application process for NSP scholarships?',
 ];
 
 export default function ChatPage() {
+  const { student, studentId } = useStudent();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
       content: `Hello! I'm ScholarAI, your intelligent scholarship assistant. 🎓
 
-I can help you find relevant scholarships, explain eligibility criteria, and answer questions about educational opportunities — all grounded in official source documents.
+I can help you find relevant scholarships, explain eligibility criteria, and answer questions about educational opportunities — all grounded in official source documents (NSP, UGC, AICTE, Ministry of Education).
 
 **What I can help with:**
+- Which scholarships you are eligible for (uses deterministic eligibility engine)
 - Scholarship eligibility criteria and requirements
 - Income limits and academic requirements
 - Document requirements and application process
@@ -258,12 +191,13 @@ I can help you find relevant scholarships, explain eligibility criteria, and ans
 
 Ask me anything about the scholarships in our knowledge base!
 
-⚠️ *Note: This is running in mock mode. Real LLM (Google Gemini) will be connected in Phase 10. All information is sourced from official documents.*`,
+⚠️ *All answers are grounded in official documents. Always verify from the official portal before applying.*`,
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -284,20 +218,81 @@ Ask me anything about the scholarships in our knowledge base!
     setInput('');
     setLoading(true);
 
-    // Simulate retrieval + generation latency
-    await new Promise((resolve) => setTimeout(resolve, 1200 + Math.random() * 800));
+    let eligibilityContext: EligibilityResult[] = [];
+    let ragQuery = query;
+    let aiSources: SourceAttribution[] = [];
+    let aiAnswer = '';
 
-    const { answer, sources } = getResponse(query);
+    try {
+      const isEligQuery = isEligibilityQuestion(query);
+
+      // ── STEP 1: Deterministic Eligibility (if eligibility question) ──────
+      if (isEligQuery && studentId) {
+        setLoadingStage('Checking eligibility…');
+        try {
+          const eligResult = await evaluateEligibility(studentId);
+          eligibilityContext = eligResult.evaluations;
+
+          // Build a structured context prefix for the LLM
+          const eligible = eligibilityContext.filter(e => e.overall_status === 'ELIGIBLE');
+          const potential = eligibilityContext.filter(e => e.overall_status === 'POTENTIALLY_ELIGIBLE');
+          const insufficient = eligibilityContext.filter(e => e.overall_status === 'INSUFFICIENT_INFORMATION');
+
+          // Compose an augmented query that passes eligibility facts to RAG
+          ragQuery = `Student eligibility determination (deterministic engine result):
+ELIGIBLE opportunities (${eligible.length}): ${eligible.map(e => e.opportunity_id).join(', ') || 'None'}
+POTENTIALLY ELIGIBLE (${potential.length}): ${potential.map(e => e.opportunity_id).join(', ') || 'None'}
+INSUFFICIENT INFORMATION (${insufficient.length}): ${insufficient.length > 0 ? 'Some opportunities need more profile information' : 'None'}
+
+Original student question: ${query}
+
+Using only official source documents, explain the eligibility results to the student and provide supporting information from official scholarship guidelines.`;
+        } catch {
+          // If eligibility check fails (e.g., no student), fall back to plain RAG
+          eligibilityContext = [];
+          ragQuery = query;
+        }
+      } else if (isEligQuery && !studentId) {
+        // Eligibility question but no profile
+        const noProfileMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `To check your scholarship eligibility, I need your student profile first.
+
+Please go to the **[Profile page](/profile)** to set up your profile, then come back and ask again.
+
+Once your profile is saved, I can use the deterministic eligibility engine to tell you exactly which scholarships you qualify for.`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, noProfileMessage]);
+        setLoading(false);
+        setLoadingStage('');
+        return;
+      }
+
+      // ── STEP 2: RAG Retrieval + LLM Generation ───────────────────────────
+      setLoadingStage('Retrieving official documents…');
+      const ragResponse = await askQuestion(ragQuery, undefined, 5);
+      aiAnswer = ragResponse.answer;
+      aiSources = ragResponse.sources;
+
+    } catch (err) {
+      aiAnswer = `I'm sorry, I encountered an error while processing your question. Please check that the backend is running and try again.\n\nError: ${err instanceof Error ? err.message : 'Unknown error'}`;
+      aiSources = [];
+    }
+
     const aiMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
-      content: answer,
-      sources,
+      content: aiAnswer,
+      sources: aiSources,
+      eligibilityContext: eligibilityContext.length > 0 ? eligibilityContext : undefined,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, aiMessage]);
     setLoading(false);
+    setLoadingStage('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -315,10 +310,20 @@ Ask me anything about the scholarships in our knowledge base!
               <Sparkles size={22} color="#818cf8" />
               <span className="gradient-text">AI Assistant</span>
             </h1>
-            <p className="page-subtitle">Ask anything about scholarships — answers grounded in official source documents</p>
+            <p className="page-subtitle">
+              {student?.name ? `Answering for ${student.name} · ` : ''}
+              Answers grounded in official NSP, UGC, AICTE & Ministry sources
+            </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.875rem', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 9999, fontSize: '0.72rem', color: '#f59e0b' }}>
-            <Zap size={11} /> Mock Mode
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {!studentId && (
+              <div style={{ padding: '0.4rem 0.875rem', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 9999, fontSize: '0.72rem', color: '#f59e0b' }}>
+                ⚠️ No profile — eligibility queries require a profile
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.875rem', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 9999, fontSize: '0.72rem', color: '#10b981' }}>
+              <Bot size={11} /> Llama 3.2 via Ollama
+            </div>
           </div>
         </div>
       </div>
@@ -328,7 +333,17 @@ Ask me anything about the scholarships in our knowledge base!
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.25rem', marginBottom: '1rem' }}>
           {messages.map((msg) => <ChatBubble key={msg.id} message={msg} />)}
-          {loading && <TypingIndicator />}
+          {loading && (
+            <div>
+              {loadingStage && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.5rem', marginLeft: '2.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <RefreshCw size={10} className="animate-spin-slow" />
+                  {loadingStage}
+                </div>
+              )}
+              <TypingIndicator />
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
 
@@ -379,7 +394,9 @@ Ask me anything about the scholarships in our knowledge base!
         {/* Disclaimer */}
         <div style={{ marginTop: '0.5rem', fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
           <AlertCircle size={10} />
-          Answers are grounded in official source documents. Always verify from the official portal before applying.
+          Eligibility is determined by the deterministic engine — not by the LLM.
+          Answers grounded in official NSP, UGC, AICTE & Ministry sources.
+          Always verify from the official portal before applying.
         </div>
       </div>
     </div>

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { User, Save, CheckCircle2, Info } from 'lucide-react';
-import { MOCK_PROFILE } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { User, Save, CheckCircle2, Info, AlertCircle, PlusCircle } from 'lucide-react';
+import { useStudent } from '@/lib/useStudent';
 import type { StudentProfile, EducationLevel, Category, InstitutionType } from '@/lib/types';
+import { DEFAULT_PROFILE_FORM } from '@/lib/types';
 
 const EDUCATION_LEVELS: EducationLevel[] = ['Class 10', 'Class 12', 'Diploma', 'UG', 'PG', 'PhD'];
 const CATEGORIES: Category[] = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Minority', 'PwD'];
@@ -40,17 +41,56 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<StudentProfile>(MOCK_PROFILE);
-  const [saved, setSaved] = useState(false);
+  const { student, studentId, loading, error, createAndPersist, saveStudent } = useStudent();
+
+  // Initialize form from student record if loaded, else use empty defaults
+  const [profile, setProfile] = useState<Omit<StudentProfile, 'id'>>(DEFAULT_PROFILE_FORM);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const isNewStudent = !studentId;
+
+  // Populate form from backend data when student loads
+  useEffect(() => {
+    if (student) {
+      const { id: _id, created_at: _c, updated_at: _u, ...rest } = student as any;
+      setProfile(rest);
+    }
+  }, [student]);
 
   const update = (field: keyof StudentProfile, value: unknown) =>
     setProfile((p) => ({ ...p, [field]: value }));
 
-  const handleSave = () => {
-    // TODO: connect to POST /api/v1/students/profile (Phase 7)
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    setSaveState('saving');
+    setSaveError(null);
+    try {
+      if (isNewStudent) {
+        // First time: create a real student record via API
+        await createAndPersist(profile);
+      } else {
+        // Update existing student
+        await saveStudent(profile);
+      }
+      setSaveState('saved');
+      setTimeout(() => setSaveState('idle'), 2500);
+    } catch (err) {
+      setSaveState('error');
+      setSaveError(err instanceof Error ? err.message : 'Failed to save profile.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="animate-fade-in">
+        <div className="page-header">
+          <h1 className="page-title"><span className="gradient-text">Student Profile</span></h1>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 120 }} />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
@@ -61,17 +101,54 @@ export default function ProfilePage() {
               <span className="gradient-text">Student Profile</span>
             </h1>
             <p className="page-subtitle">
-              Your profile is used to filter and rank scholarships. Keep it accurate.
+              {isNewStudent
+                ? 'Create your profile to get personalized scholarship recommendations.'
+                : 'Your profile is used to filter and rank scholarships. Keep it accurate.'}
             </p>
           </div>
-          <button className="btn-primary" onClick={handleSave} id="save-profile-btn">
-            {saved ? <CheckCircle2 size={15} /> : <Save size={15} />}
-            {saved ? 'Saved!' : 'Save Profile'}
+          <button
+            className="btn-primary"
+            onClick={handleSave}
+            id="save-profile-btn"
+            disabled={saveState === 'saving'}
+          >
+            {saveState === 'saving' && <User size={15} className="animate-spin-slow" />}
+            {saveState === 'saved' && <CheckCircle2 size={15} />}
+            {saveState === 'error' && <AlertCircle size={15} />}
+            {(saveState === 'idle' || saveState === 'saving') && !student && <PlusCircle size={15} />}
+            {saveState === 'idle' && student && <Save size={15} />}
+            {saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Saved!' : isNewStudent ? 'Create Profile' : 'Save Profile'}
           </button>
         </div>
       </div>
 
-      {/* Notice */}
+      {/* Error from hook (stale ID, network) */}
+      {error && saveState !== 'error' && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
+          padding: '0.875rem 1.1rem', marginBottom: '1.25rem',
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+          borderRadius: '0.75rem', fontSize: '0.8rem', color: '#f87171',
+        }}>
+          <AlertCircle size={15} style={{ flexShrink: 0 }} />
+          {error}
+        </div>
+      )}
+
+      {/* Save error */}
+      {saveState === 'error' && saveError && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
+          padding: '0.875rem 1.1rem', marginBottom: '1.25rem',
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+          borderRadius: '0.75rem', fontSize: '0.8rem', color: '#f87171',
+        }}>
+          <AlertCircle size={15} style={{ flexShrink: 0 }} />
+          {saveError}
+        </div>
+      )}
+
+      {/* Info notice */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '0.75rem',
         padding: '0.875rem 1.1rem', marginBottom: '1.5rem',
@@ -79,8 +156,14 @@ export default function ProfilePage() {
         borderRadius: '0.75rem', fontSize: '0.8rem', color: '#a5b4fc',
       }}>
         <Info size={15} style={{ flexShrink: 0 }} />
-        Profile data is used only for eligibility matching. Only provide information you are comfortable sharing.
-        Sensitive fields are optional.
+        {isNewStudent
+          ? 'Fill in your details and click "Create Profile" to get personalized scholarship recommendations from our backend.'
+          : 'Profile data is used only for eligibility matching. Only provide information you are comfortable sharing.'}
+        {studentId && (
+          <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+            ID: {studentId.substring(0, 8)}…
+          </span>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', alignItems: 'start' }}>
@@ -89,12 +172,13 @@ export default function ProfilePage() {
           <FormSection title="Academic Details">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <Field label="Education Level">
-                <select className="select" value={profile.education_level} onChange={(e) => update('education_level', e.target.value as EducationLevel)} id="edu-level">
+                <select className="select" value={profile.education_level || ''} onChange={(e) => update('education_level', e.target.value as EducationLevel)} id="edu-level">
+                  <option value="">Select level</option>
                   {EDUCATION_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
                 </select>
               </Field>
               <Field label="Course">
-                <input className="input" placeholder="e.g. B.Tech, MBBS, M.Sc" value={profile.course} onChange={(e) => update('course', e.target.value)} id="course" />
+                <input className="input" placeholder="e.g. B.Tech, MBBS, M.Sc" value={profile.course || ''} onChange={(e) => update('course', e.target.value)} id="course" />
               </Field>
               <Field label="Branch / Specialization">
                 <input className="input" placeholder="e.g. Computer Science" value={profile.branch ?? ''} onChange={(e) => update('branch', e.target.value)} id="branch" />
@@ -197,7 +281,11 @@ export default function ProfilePage() {
           <div className="card">
             <div className="section-title">Profile Completeness</div>
             {(() => {
-              const fields = [profile.education_level, profile.course, profile.cgpa, profile.annual_family_income, profile.state, profile.category, profile.institution_type, profile.gender, profile.branch];
+              const fields = [
+                profile.education_level, profile.course, profile.cgpa,
+                profile.annual_family_income, profile.state, profile.category,
+                profile.institution_type, profile.gender, profile.branch,
+              ];
               const filled = fields.filter(Boolean).length;
               const pct = Math.round((filled / fields.length) * 100);
               return (

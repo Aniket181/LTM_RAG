@@ -10,11 +10,11 @@ import type { SourceDocument } from '@/lib/types';
 
 function statusMeta(status: SourceDocument['ingestion_status']) {
   const map = {
-    ingested: { label: 'Ingested',  color: '#10b981', icon: <CheckCircle2 size={12} color="#10b981" /> },
-    pending:  { label: 'Pending',   color: '#f59e0b', icon: <Clock size={12} color="#f59e0b" /> },
-    failed:   { label: 'Failed',    color: '#ef4444', icon: <XCircle size={12} color="#ef4444" /> },
+    Processed: { label: 'Ingested',  color: '#10b981', icon: <CheckCircle2 size={12} color="#10b981" /> },
+    Pending:  { label: 'Pending',   color: '#f59e0b', icon: <Clock size={12} color="#f59e0b" /> },
+    Failed:   { label: 'Failed',    color: '#ef4444', icon: <XCircle size={12} color="#ef4444" /> },
   };
-  return map[status];
+  return map[status] || map.Pending;
 }
 
 function SourceCard({ doc }: { doc: SourceDocument }) {
@@ -27,11 +27,11 @@ function SourceCard({ doc }: { doc: SourceDocument }) {
         {/* Icon */}
         <div style={{
           width: 42, height: 42, borderRadius: '0.625rem', flexShrink: 0,
-          background: doc.ingestion_status === 'ingested' ? 'rgba(99,102,241,0.15)' : 'rgba(245,158,11,0.1)',
+          background: doc.ingestion_status === 'Processed' ? 'rgba(99,102,241,0.15)' : 'rgba(245,158,11,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: `1px solid ${doc.ingestion_status === 'ingested' ? 'rgba(99,102,241,0.25)' : 'rgba(245,158,11,0.2)'}`,
+          border: `1px solid ${doc.ingestion_status === 'Processed' ? 'rgba(99,102,241,0.25)' : 'rgba(245,158,11,0.2)'}`,
         }}>
-          <FileText size={18} color={doc.ingestion_status === 'ingested' ? '#818cf8' : '#f59e0b'} />
+          <FileText size={18} color={doc.ingestion_status === 'Processed' ? '#818cf8' : '#f59e0b'} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -112,9 +112,9 @@ function SourceCard({ doc }: { doc: SourceDocument }) {
 }
 
 export default function SourcesPage() {
-  const ingested = MOCK_SOURCES.filter((d) => d.ingestion_status === 'ingested');
-  const pending  = MOCK_SOURCES.filter((d) => d.ingestion_status === 'pending');
-  const failed   = MOCK_SOURCES.filter((d) => d.ingestion_status === 'failed');
+  const ingested = MOCK_SOURCES.filter((d) => d.ingestion_status === 'Processed');
+  const pending  = MOCK_SOURCES.filter((d) => d.ingestion_status === 'Pending');
+  const failed   = MOCK_SOURCES.filter((d) => d.ingestion_status === 'Failed');
   const totalChunks = MOCK_SOURCES.reduce((sum, d) => sum + (d.chunk_count ?? 0), 0);
 
   return (

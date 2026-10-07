@@ -212,20 +212,19 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
           </div>
 
           {/* Match Score */}
-          {rec && (
+          {rec && rec.score && (
             <div className="card">
               <div className="section-title">Match Score Breakdown</div>
               <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                 <span style={{ fontSize: '2.5rem', fontWeight: 900 }} className="gradient-text">
-                  {Math.round(rec.match_score * 100)}%
+                  {Math.round((rec.score.total_score / 100) * 100)}%
                 </span>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Overall match score</div>
               </div>
-              <ScoreBar label="Semantic Relevance (35%)"  value={rec.score_breakdown.semantic}   color="#6366f1" />
-              <ScoreBar label="Eligibility Match (30%)"   value={rec.score_breakdown.eligibility} color="#10b981" />
-              <ScoreBar label="Course Relevance (15%)"    value={rec.score_breakdown.course}      color="#06b6d4" />
-              <ScoreBar label="Academic Match (10%)"      value={rec.score_breakdown.academic}    color="#8b5cf6" />
-              <ScoreBar label="Deadline Relevance (10%)"  value={rec.score_breakdown.deadline}    color="#f59e0b" />
+              <ScoreBar label="Financial Need (30%)"  value={rec.score.financial_need_score / 30} color="#10b981" />
+              <ScoreBar label="Academic Merit (20%)"  value={rec.score.academic_merit_score / 20} color="#8b5cf6" />
+              <ScoreBar label="Demographic (20%)"     value={rec.score.demographic_match_score / 20} color="#06b6d4" />
+              <ScoreBar label="Deadline (30%)"        value={rec.score.deadline_score / 30} color="#f59e0b" />
               <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                 Match score is a system-generated relevance indicator, not official eligibility.
               </div>
