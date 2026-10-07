@@ -41,11 +41,13 @@ def override_db(db_session):
     app.dependency_overrides.clear()
 
 @pytest.fixture
-def client(override_db):
+def client(override_db, monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "mock")
     return TestClient(app)
 
 @pytest.fixture
-def seed_rag_data(db_session):
+def seed_rag_data(db_session, monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "mock")
     """Seed db with controlled test documents and chunks for RAG."""
     doc_a = SourceDocument(
         id=uuid.uuid4(), title="Doc A", source_url="doc_a.pdf",
@@ -70,18 +72,23 @@ def seed_rag_data(db_session):
         source_document_id=doc_b.id
     )
     
-    # We will use dummy vectors since we are using mock LLM and we don't care about perfect semantic search in this test,
-    # BM25 will find the chunks anyway because we are searching for exact words.
-    dummy_vec = [0.1] * 384
+    from app.retrieval.embedder import LocalEmbedder
+    embedder = LocalEmbedder()
+    
+    content_a = "Documents required for Opportunity A include Aadhar card and Income certificate."
+    content_b = "Documents required for Opportunity B include PAN card and 10th marksheet."
+    
+    emb_a = embedder.embed_query(content_a)
+    emb_b = embedder.embed_query(content_b)
     
     chunk_a = DocumentChunk(
-        id=uuid.uuid4(), source_document_id=doc_a.id, content="Documents required for Opportunity A include Aadhar card and Income certificate.",
-        chunk_index=0, page_number=1, embedding=dummy_vec
+        id=uuid.uuid4(), source_document_id=doc_a.id, content=content_a,
+        chunk_index=0, page_number=1, embedding=emb_a
     )
     
     chunk_b = DocumentChunk(
-        id=uuid.uuid4(), source_document_id=doc_b.id, content="Documents required for Opportunity B include PAN card and 10th marksheet.",
-        chunk_index=0, page_number=1, embedding=dummy_vec
+        id=uuid.uuid4(), source_document_id=doc_b.id, content=content_b,
+        chunk_index=0, page_number=1, embedding=emb_b
     )
     
     db_session.add_all([opp_a, opp_b, doc_a, doc_b, chunk_a, chunk_b])

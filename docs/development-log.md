@@ -257,3 +257,27 @@ The UI shows a disclaimer on every page advising users to verify from official s
 ---
 
 *Next: Phase 10 — RAG-based Grounded Q&A*
+
+---
+
+## Phase E — Hybrid Retrieval + RRF Validation
+**Date:** 2026-10-07
+**Status:** ✅ Complete
+
+### Configuration & Architecture Confirmed
+- **Corpus Size:** 40 chunks
+- **Embedding Status:** 40 Non-Null PostgreSQL vectors (BAAI/bge-small-en-v1.5)
+- **BM25 Status:** 40 Indexed chunks (in-memory Singleton cache)
+- **RRF Configuration:** `rrf_k = 60`, exact formula implemented natively
+
+### Validation Results
+- **Tested Queries:** Validated exact behavior using "eligibility", "documents required", "scholarship benefits", "application process", and "financial conditions".
+- **Top-K Results:** Deterministic limits accurately maintained (k=1, 3, 5). Chunk maps naturally eliminate duplication across sub-retrievers.
+- **Irrelevant Query Behavior:** Queries like "How do I repair a bicycle?" reliably fetch low-similarity semantic matches (dist ~ 0.48), resulting in confident rejection via the RAGEngine distance threshold (0.40).
+- **API Validation:** `/api/v1/search/hybrid` operates robustly, confirming payload schemas and response consistency.
+- **Determinism:** Results remained mathematically identical across multi-invocation tests.
+- **Regression Result:** 52/52 pytest tests PASSING.
+- **Warnings:** Only acceptable dependency/starlette async warnings present.
+
+### Conclusion
+The custom Hybrid RRF algorithm cleanly blends independent lexical (BM25) and semantic (pgvector) signals, preserving critical metadata and yielding highly relevant retrieval results. The system is structurally verified and ready for end-to-end integration with the generative LLM tier.

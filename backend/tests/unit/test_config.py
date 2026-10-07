@@ -16,10 +16,10 @@ class TestSettings:
         s = Settings()
         assert "RAG" in s.app_name or "Scholarship" in s.app_name
 
-    def test_default_llm_provider_is_mock(self) -> None:
-        """Default LLM provider must be 'mock' (no API key required)."""
+    def test_default_llm_provider_is_ollama(self) -> None:
+        """Default LLM provider must be 'ollama' in Phase F."""
         s = Settings()
-        assert s.llm_provider == "mock"
+        assert s.llm_provider == "ollama"
 
     def test_default_vector_store_is_chromadb(self) -> None:
         """Default vector store must be 'chromadb' for development."""

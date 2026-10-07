@@ -43,6 +43,17 @@ Rules:
             opportunity_id=request.opportunity_id
         )
         
+        # Filter out chunks that are semantically irrelevant
+        # BGE embeddings typically yield distance > 0.40 for completely unrelated text.
+        filtered_results = []
+        for res in results:
+            dist = res.get("distance_score")
+            if dist is not None and dist > 0.40:
+                continue
+            filtered_results.append(res)
+            
+        results = filtered_results
+        
         if not results:
             return AnswerResponse(
                 answer="I don't know based on the provided documents.",

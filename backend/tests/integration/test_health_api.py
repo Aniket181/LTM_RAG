@@ -65,9 +65,8 @@ class TestHealthEndpoint:
         response = client.get("/api/v1/health")
         assert response.json()["version"] == settings.app_version
 
-    def test_health_llm_provider_is_mock(self, client: TestClient) -> None:
-        """LLM provider should be 'mock' in Phase 1 development."""
+    def test_health_llm_provider_is_supported(self, client: TestClient) -> None:
+        """LLM provider should be one of the supported providers."""
         response = client.get("/api/v1/health")
-        # In CI / default config, LLM provider is mock
         llm = response.json()["llm_provider"]
-        assert llm in {"mock", "openai", "google", "anthropic"}
+        assert llm in {"mock", "openai", "google", "anthropic", "ollama"}

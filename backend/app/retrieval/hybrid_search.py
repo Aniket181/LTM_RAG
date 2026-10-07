@@ -73,9 +73,6 @@ class HybridSearcher:
             result_item = chunk_map[chunk_id]
             # Replace the original engine score with the hybrid RRF score
             result_item["score"] = score
-            # Remove distance_score if it exists to keep schema uniform
-            if "distance_score" in result_item:
-                result_item["distance_score"] = None
             final_results.append(result_item)
             
         return final_results
